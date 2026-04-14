@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Indie Revolutions — Self-distribution for the people." />
+  <title>Indie Revolutions</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #f0ebe0; }
+    select option { background: #111; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+const US_STATES = [
+“Alabama”,“Alaska”,“Arizona”,“Arkansas”,“California”,“Colorado”,“Connecticut”,
+“Delaware”,“Florida”,“Georgia”,“Hawaii”,“Idaho”,“Illinois”,“Indiana”,“Iowa”,
+“Kansas”,“Kentucky”,“Louisiana”,“Maine”,“Maryland”,“Massachusetts”,“Michigan”,
+“Minnesota”,“Mississippi”,“Missouri”,“Montana”,“Nebraska”,“Nevada”,“New Hampshire”,
+“New Jersey”,“New Mexico”,“New York”,“North Carolina”,“North Dakota”,“Ohio”,
+“Oklahoma”,“Oregon”,“Pennsylvania”,“Rhode Island”,“South Carolina”,“South Dakota”,
+“Tennessee”,“Texas”,“Utah”,“Vermont”,“Virginia”,“Washington”,“West Virginia”,
+“Wisconsin”,“Wyoming”
+];
+
+const GENRES = [
+“Action”,“Drama”,“Documentary”,“Experimental”,“Foreign Language”,“Animation”,
+“Horror”,“Comedy”,“Sci-Fi”,“Romance”,“Thriller”
+];
+
+const SKILLS = [
+“Filmmaker”,“Venue Owner”,“Designer”,“Developer”,“Marketer”,“Photographer”,
+“Writer”,“Musician”,“Event Organiser”,“PR & Media”,“Distributor”,“Other”
+];
+
+const RENEGADE_TOWNS = [
+{ city: “Austin, TX”, count: 1842, trending: true },
+{ city: “Portland, OR”, count: 2103, trending: false },
+{ city: “Brooklyn, NY”, count: 3890, trending: true },
+{ city: “Asheville, NC”, count: 674, trending: true },
+{ city: “Denver, CO”, count: 1201, trending: false },
+{ city: “New Orleans, LA”, count: 988, trending: false },
+];
+
+const SEED_NIGHTS = [
+{ id:1, film:“Tangerine”, director:“Sean Baker”, year:“2015”, renegade:“Marcus T.”, town:“Austin, TX”, moment:“We stayed in the parking lot talking for two hours after. Nobody wanted the night to end.”, genre:“Drama”, renegades:[“Marcus T.”,“Priya S.”,“Devon W.”,“Lena K.”] },
+{ id:2, film:“Beasts of the Southern Wild”, director:“Benh Zeitlin”, year:“2012”, renegade:“Carla M.”, town:“New Orleans, LA”, moment:“The whole room went silent for the last 20 minutes. Not a single phone came out.”, genre:“Drama”, renegades:[“Carla M.”,“James R.”,“Sofia P.”] },
+{ id:3, film:“Moonlight”, director:“Barry Jenkins”, year:“2016”, renegade:“Simone A.”, town:“Brooklyn, NY”, moment:“Someone started a conversation about their own life halfway through. We let them talk. The film waited.”, genre:“Drama”, renegades:[“Simone A.”,“Kai T.”,“Rosa M.”,“Ben H.”] },
+{ id:4, film:“Searching for Sugar Man”, director:“Malik Bendjelloul”, year:“2012”, renegade:“Dana K.”, town:“Denver, CO”, moment:“We all went home and played Rodriguez records until 2am. Changed what I thought music could do.”, genre:“Documentary”, renegades:[“Dana K.”,“Felix W.”] },
+];
+
+const SEED_VENUES = [
+{ id:1, name:“The Paramount Underground”, town:“Austin, TX”, address:“214 W 7th St”, capacity:“120”, type:“Independent Theatre”, note:“Owner is a huge film lover. Best popcorn in Austin. Just call ahead and ask for Danny.” },
+{ id:2, name:“Corktown Tavern Back Room”, town:“Detroit, MI”, address:“1 Michigan Ave”, capacity:“60”, type:“Bar with Screen”, note:“They’ve done pop-ups before. Owner gives filmmakers free beer after the show. Sound system is surprisingly great.” },
+{ id:3, name:“St. Anthony’s Community Hall”, town:“New Orleans, LA”, address:“833 Lower Line St”, capacity:“200”, type:“Community Hall”, note:“Available most weekends. Bring your own projector. Staff are incredibly welcoming to filmmakers.” },
+{ id:4, name:“The Warehouse on Pearl”, town:“Denver, CO”, address:“Pearl St & 28th”, capacity:“150”, type:“Warehouse”, note:“Raw space but perfect atmosphere. Owner treats every screening like an event. Contact is Rosa M.” },
+];
+
+// Styles
+const iStyle = { width:“100%”, background:“rgba(255,255,255,0.04)”, border:“1px solid rgba(240,235,224,0.15)”, color:”#f0ebe0”, padding:“14px 16px”, fontSize:“15px”, fontFamily:“inherit”, outline:“none”, boxSizing:“border-box” };
+const lStyle = { fontSize:“10px”, letterSpacing:“0.25em”, textTransform:“uppercase”, color:“rgba(240,235,224,0.4)”, display:“block”, marginBottom:“8px” };
+const rBtn = { padding:“16px 36px”, background:”#c0392b”, border:“none”, color:”#f0ebe0”, fontSize:“12px”, letterSpacing:“0.2em”, textTransform:“uppercase”, cursor:“pointer”, fontFamily:“inherit”, fontWeight:“bold” };
+const gBtn = { padding:“16px 36px”, background:“transparent”, border:“1px solid rgba(240,235,224,0.25)”, color:“rgba(240,235,224,0.6)”, fontSize:“12px”, letterSpacing:“0.2em”, textTransform:“uppercase”, cursor:“pointer”, fontFamily:“inherit” };
+
+const LOGO_SRC = “data:image/jpeg;base64,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”;
+
+const CONTACT_EMAIL = “hello@indierevolutions.com”;
+const TOTAL_FOUNDING = 500;
+const SPOTS_TAKEN = 347; // update this as real signups come in
+
+export default function IndieRevolution() {
+const [step, setStep] = useState(“home”);
+const [role, setRole] = useState(null);
+const [oathTaken, setOathTaken] = useState(false);
+const [form, setForm] = useState({ name:””, email:””, city:””, state:””, genres:[], favoriteFilm:””, honeypot:”” });
+const [filmForm, setFilmForm] = useState({ name:””, email:””, film:””, year:””, synopsis:””, towns:””, budget:”” });
+const [involvedForm, setInvolvedForm] = useState({ name:””, email:””, skill:””, idea:””, honeypot:””, favoriteFilm:”” });
+const [nights, setNights] = useState(SEED_NIGHTS);
+const [nightForm, setNightForm] = useState({ film:””, director:””, year:””, renegade:””, town:””, moment:””, genre:”” });
+const [showNightForm, setShowNightForm] = useState(false);
+const [venues, setVenues] = useState(SEED_VENUES);
+const [venueForm, setVenueForm] = useState({ name:””, town:””, address:””, capacity:””, type:””, note:”” });
+const [showVenueForm, setShowVenueForm] = useState(false);
+const [shared, setShared] = useState(null);
+const [hoveredCity, setHoveredCity] = useState(null);
+const [spotsLeft, setSpotsLeft] = useState(TOTAL_FOUNDING - SPOTS_TAKEN);
+const [involvedSent, setInvolvedSent] = useState(false);
+const [involvedError, setInvolvedError] = useState(””);
+const formStartTime = useRef(null);
+
+useEffect(() => { formStartTime.current = Date.now(); }, [step]);
+
+const pickGenre = (g) => {
+setForm(f => {
+if (f.genres.includes(g)) return { …f, genres: f.genres.filter(x => x !== g) };
+if (f.genres.length >= 3) return f;
+return { …f, genres: […f.genres, g] };
+});
+};
+
+// Bot checks: honeypot filled, submitted too fast (<4s), no favorite film
+const isBotSignup = () => {
+if (form.honeypot) return true;
+if (Date.now() - formStartTime.current < 4000) return true;
+if (!form.favoriteFilm.trim()) return true;
+return false;
+};
+
+const isBotInvolved = () => {
+if (involvedForm.honeypot) return true;
+if (Date.now() - formStartTime.current < 4000) return true;
+if (!involvedForm.favoriteFilm.trim()) return true;
+return false;
+};
+
+const handleFanSubmit = () => {
+if (!form.name || !form.email || !form.city || !form.state || !oathTaken) return;
+if (isBotSignup()) return; // silently block bots
+if (spotsLeft > 0) setSpotsLeft(s => s - 1);
+setStep(“success”);
+};
+
+const handleFilmSubmit = () => {
+if (filmForm.name && filmForm.email && filmForm.film) setStep(“success”);
+};
+
+const handleInvolvedSubmit = () => {
+if (!involvedForm.name || !involvedForm.email || !involvedForm.skill || !involvedForm.idea) {
+setInvolvedError(“Please fill in all fields.”); return;
+}
+if (isBotInvolved()) { setInvolvedError(“Something went wrong. Please try again.”); return; }
+setInvolvedError(””);
+setInvolvedSent(true);
+};
+
+const submitNight = () => {
+if (!nightForm.film || !nightForm.renegade || !nightForm.town || !nightForm.moment) return;
+setNights(n => [{ id: Date.now(), …nightForm, renegades: [nightForm.renegade] }, …n]);
+setNightForm({ film:””, director:””, year:””, renegade:””, town:””, moment:””, genre:”” });
+setShowNightForm(false);
+};
+
+const submitVenue = () => {
+if (!venueForm.name || !venueForm.town) return;
+setVenues(v => [{ id: Date.now(), …venueForm }, …v]);
+setVenueForm({ name:””, town:””, address:””, capacity:””, type:””, note:”” });
+setShowVenueForm(false);
+};
+
+const handleShare = (night) => {
+const text = `"${night.film}" — ${night.moment} — shared by ${night.renegade} in ${night.town} via Indie Revolutions ✊`;
+if (navigator.clipboard) navigator.clipboard.writeText(text);
+setShared(night.id);
+setTimeout(() => setShared(null), 2000);
+};
+
+const pct = Math.round((spotsLeft / TOTAL_FOUNDING) * 100);
+
+const navLinks = [
+[“For Renegades”, () => { setStep(“signup”); setRole(“fan”); }],
+[“For Filmmakers”, () => { setStep(“signup”); setRole(“filmmaker”); }],
+[“The Nights”, () => setStep(“nights”)],
+[“Venues”, () => setStep(“venues”)],
+[“Get Involved”, () => setStep(“involved”)],
+[“The Code”, () => setStep(“code”)],
+[“The Manifesto”, () => setStep(“manifesto”)],
+];
+
+const Nav = () => (
+<nav style={{ display:“flex”, justifyContent:“space-between”, alignItems:“center”, padding:“24px 48px”, borderBottom:“1px solid rgba(240,235,224,0.1)”, flexWrap:“wrap”, gap:“16px” }}>
+<div onClick={() => setStep(“home”)} style={{ cursor:“pointer”, display:“flex”, alignItems:“center”, gap:“10px” }}>
+<img src={LOGO_SRC} alt=“Indie Revolutions” style={{ width:“40px”, height:“40px”, objectFit:“cover”, borderRadius:“4px” }} />
+<span style={{ fontSize:“11px”, letterSpacing:“0.3em”, textTransform:“uppercase”, color:”#f0ebe0” }}>Indie <span style={{ color:”#c0392b” }}>Revolutions</span></span>
+</div>
+<div style={{ display:“flex”, gap:“20px”, fontSize:“11px”, letterSpacing:“0.12em”, flexWrap:“wrap” }}>
+{navLinks.map(([label, action]) => (
+<span key={label} onClick={action} style={{ color:“rgba(240,235,224,0.5)”, cursor:“pointer” }}>{label}</span>
+))}
+</div>
+</nav>
+);
+
+return (
+<div style={{ minHeight:“100vh”, background:”#0a0a0a”, color:”#f0ebe0”, fontFamily:”‘Georgia’,‘Times New Roman’,serif”, position:“relative”, overflow:“hidden” }}>
+<div style={{ position:“fixed”, inset:0, pointerEvents:“none”, zIndex:0, backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E")`, opacity:0.4 }} />
+<div style={{ position:“fixed”, top:”-200px”, left:”-200px”, width:“600px”, height:“600px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,40,40,0.07) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
+<div style={{ position:“fixed”, bottom:”-150px”, right:”-100px”, width:“500px”, height:“500px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,130,60,0.06) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
+
+```
+  <div style={{ position:"relative", zIndex:1 }}>
+    <Nav />
+
+    {/* ───── HOME ───── */}
+    {step === "home" && (
+      <div>
+        <div style={{ maxWidth:"900px", margin:"0 auto", padding:"80px 48px 60px", textAlign:"center" }}>
+          <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>✊ The Independent Film Movement</p>
+          <img src={LOGO_SRC} alt="Indie Revolutions" style={{ width:"120px", height:"120px", objectFit:"cover", borderRadius:"8px", marginBottom:"32px", boxShadow:"0 0 40px rgba(192,57,43,0.3)" }} />
+          <h1 style={{ fontSize:"clamp(48px,8vw,96px)", lineHeight:1.0, fontWeight:"normal", marginBottom:"32px", letterSpacing:"-0.02em" }}>
+            Burn down<br /><em style={{ color:"#c0392b" }}>the gatekeepers.</em><br />Screen everywhere.
+          </h1>
+          <p style={{ fontSize:"18px", lineHeight:1.7, color:"rgba(240,235,224,0.6)", maxWidth:"580px", margin:"0 auto 24px" }}>
+            Indie Revolutions connects Renegades in every American town with independent films on tour. No studios. No gatekeepers. Just great cinema finding its people.
+          </p>
+          <p style={{ fontSize:"15px", lineHeight:1.7, color:"#c0392b", maxWidth:"520px", margin:"0 auto 48px", fontStyle:"italic", letterSpacing:"0.02em" }}>
+            No more being told what's cool. They don't tell us how to dress or how to act. We are our own culture. ✊
+          </p>
+          <div style={{ display:"flex", gap:"16px", justifyContent:"center", flexWrap:"wrap" }}>
+            <button onClick={() => { setStep("signup"); setRole("fan"); }} style={rBtn}>Become a Renegade →</button>
+            <button onClick={() => { setStep("signup"); setRole("filmmaker"); }} style={gBtn}>I Have a Film</button>
+            <button onClick={() => setStep("code")} style={{ ...gBtn, borderColor:"rgba(192,57,43,0.4)", color:"#c0392b" }}>The Code ✊</button>
+          </div>
+        </div>
+
+        {/* ── FOUNDING 500 BANNER ── */}
+        <div style={{ margin:"0 48px 60px", maxWidth:"860px", marginLeft:"auto", marginRight:"auto" }}>
+          <div style={{ border:"2px solid #c0392b", padding:"40px", background:"rgba(192,57,43,0.05)", position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:0, left:0, height:"100%", width:`${100-pct}%`, background:"rgba(192,57,43,0.06)", transition:"width 0.5s" }} />
+            <div style={{ position:"relative", zIndex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:"24px" }}>
+                <div>
+                  <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"12px" }}>🏆 The Founding 500</p>
+                  <h2 style={{ fontSize:"clamp(24px,4vw,40px)", fontWeight:"normal", lineHeight:1.2, margin:"0 0 16px" }}>
+                    Be part of history.<br /><em style={{ color:"#c0392b" }}>Never made again.</em>
+                  </h2>
+                  <p style={{ fontSize:"15px", lineHeight:1.8, color:"rgba(240,235,224,0.6)", maxWidth:"480px", margin:"0 0 24px" }}>
+                    The first 500 Renegades to join receive the <strong style={{ color:"#f0ebe0" }}>Indie Revolutions Founding Trophy</strong> — cast with the original founding logo, never reproduced, never sold. A piece of the movement's history. Proof you were here at the beginning.
+                  </p>
+                  <p style={{ fontSize:"13px", color:"rgba(240,235,224,0.4)", fontStyle:"italic", marginBottom:"24px" }}>
+                    After 500, the mold is destroyed. These will never exist again.
+                  </p>
+                  <button onClick={() => { setStep("signup"); setRole("fan"); }} style={rBtn}>
+                    Claim Your Spot →
+                  </button>
+                </div>
+                <div style={{ textAlign:"center", minWidth:"160px" }}>
+                  <div style={{ fontSize:"clamp(48px,8vw,80px)", color:"#c0392b", fontStyle:"italic", lineHeight:1 }}>{spotsLeft}</div>
+                  <div style={{ fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(240,235,224,0.4)", marginTop:"8px" }}>spots remaining</div>
+                  <div style={{ marginTop:"16px", height:"4px", background:"rgba(240,235,224,0.1)", borderRadius:"2px" }}>
+                    <div style={{ height:"100%", width:`${100-pct}%`, background:"#c0392b", borderRadius:"2px", transition:"width 0.5s" }} />
+                  </div>
+                  <div style={{ fontSize:"11px", color:"rgba(240,235,224,0.3)", marginTop:"8px" }}>{TOTAL_FOUNDING - spotsLeft} of {TOTAL_FOUNDING} claimed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop:"1px solid rgba(240,235,224,0.1)", borderBottom:"1px solid rgba(240,235,224,0.1)", display:"flex", justifyContent:"center", gap:"80px", padding:"32px 48px", flexWrap:"wrap" }}>
+          {[["47,000+","Renegades"],["1,200+","Towns"],["340+","Films on Tour"]].map(([n,l]) => (
+            <div key={l} style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"32px", color:"#c0392b", fontStyle:"italic" }}>{n}</div>
+              <div style={{ fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(240,235,224,0.4)", marginTop:"4px" }}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ maxWidth:"900px", margin:"0 auto", padding:"80px 48px" }}>
+          <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"48px" }}>How the Revolution Works</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"48px" }}>
+            {[["01","Renegades Sign Up","Film lovers in every town register their location, taste, and local venues that could host a screening."],["02","Films Hit the Road","Filmmakers list their film and the towns they can reach. We match them with Renegades and venues already waiting."],["03","Towns Ignite","Renegades get notified. Venues get booked. Films get screened. Every dollar goes to the filmmaker."]].map(([n,t,d]) => (
+              <div key={n} style={{ borderTop:"1px solid rgba(192,57,43,0.3)", paddingTop:"24px" }}>
+                <div style={{ fontSize:"48px", color:"rgba(192,57,43,0.2)", fontStyle:"italic", marginBottom:"16px" }}>{n}</div>
+                <div style={{ fontSize:"16px", marginBottom:"12px" }}>{t}</div>
+                <div style={{ fontSize:"14px", lineHeight:1.7, color:"rgba(240,235,224,0.5)" }}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background:"rgba(255,255,255,0.02)", borderTop:"1px solid rgba(240,235,224,0.08)", padding:"80px 48px" }}>
+          <div style={{ maxWidth:"900px", margin:"0 auto" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"12px" }}>Renegade Towns</p>
+            <h2 style={{ fontSize:"32px", fontWeight:"normal", marginBottom:"48px" }}>Towns already in the revolution</h2>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"2px" }}>
+              {RENEGADE_TOWNS.map(({ city, count, trending }) => (
+                <div key={city} onMouseEnter={() => setHoveredCity(city)} onMouseLeave={() => setHoveredCity(null)} style={{ padding:"20px 24px", borderLeft:`3px solid ${hoveredCity===city?"#c0392b":"rgba(240,235,224,0.1)"}`, background:hoveredCity===city?"rgba(192,57,43,0.05)":"transparent", display:"flex", justifyContent:"space-between", alignItems:"center", transition:"all 0.2s" }}>
+                  <div>
+                    <span style={{ fontSize:"15px" }}>{city}</span>
+                    {trending && <span style={{ marginLeft:"12px", fontSize:"10px", letterSpacing:"0.15em", color:"#c0392b", textTransform:"uppercase" }}>↑ rising</span>}
+                  </div>
+                  <span style={{ fontSize:"13px", color:"rgba(240,235,224,0.4)" }}>{count.toLocaleString()} renegades</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* REVOLUTION ROADMAP */}
+        <div style={{ maxWidth:"900px", margin:"0 auto", padding:"80px 48px" }}>
+          <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>The Revolution Roadmap</p>
+          <h2 style={{ fontSize:"clamp(28px,4vw,48px)", fontWeight:"normal", lineHeight:1.1, marginBottom:"16px" }}>
+            Film is the first frame.<br /><em style={{ color:"#c0392b" }}>The rest of the picture is coming.</em>
+          </h2>
+          <p style={{ fontSize:"16px", lineHeight:1.8, color:"rgba(240,235,224,0.45)", marginBottom:"56px", maxWidth:"580px" }}>
+            Indie Revolutions was built for film. But the gatekeepers don't just control cinema — they control music, art, culture itself. We're taking all of it back. Phase by phase.
+          </p>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"2px" }}>
+            {[
+              ["01", "Film", "NOW", "Indie films. Real stories. Renegades in every town showing up for filmmakers who bet everything on their vision. The revolution starts here — in the dark, together.", true],
+              ["02", "Music", "NEXT", "Independent artists. No label. No radio gatekeepers. Just musicians who built something real finding the towns that need to hear it.", false],
+              ["03", "Art", "COMING", "Pop-ups. Installations. Shows in warehouses, empty storefronts, and community spaces. Art that doesn't wait for a gallery to say yes.", false],
+              ["04", "And Beyond", "THE FUTURE", "Theatre. Comedy. Photography. Poetry. Every art form shut out by the gatekeepers has a home here. We're just getting started.", false],
+            ].map(([phase, title, status, desc, active]) => (
+              <div key={phase} style={{ padding:"32px 24px", borderTop:`3px solid ${active?"#c0392b":"rgba(240,235,224,0.1)"}`, background: active?"rgba(192,57,43,0.04)":"transparent", position:"relative" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px" }}>
+                  <span style={{ fontSize:"36px", fontStyle:"italic", color: active?"rgba(192,57,43,0.4)":"rgba(240,235,224,0.08)", lineHeight:1 }}>{phase}</span>
+                  <span style={{ fontSize:"9px", letterSpacing:"0.2em", textTransform:"uppercase", color: active?"#c0392b":"rgba(240,235,224,0.2)", border:`1px solid ${active?"rgba(192,57,43,0.4)":"rgba(240,235,224,0.1)"}`, padding:"4px 8px" }}>{status}</span>
+                </div>
+                <h3 style={{ fontSize:"20px", fontWeight:"normal", marginBottom:"12px", color: active?"#f0ebe0":"rgba(240,235,224,0.4)" }}>{title}</h3>
+                <p style={{ fontSize:"13px", lineHeight:1.7, color: active?"rgba(240,235,224,0.55)":"rgba(240,235,224,0.25)", margin:0 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop:"48px", padding:"32px", background:"rgba(192,57,43,0.04)", border:"1px solid rgba(192,57,43,0.15)", textAlign:"center" }}>
+            <p style={{ fontSize:"18px", fontStyle:"italic", color:"rgba(240,235,224,0.6)", margin:"0 0 8px", lineHeight:1.7 }}>
+              No more being told what's cool by Hollywood or any corporation.
+            </p>
+            <p style={{ fontSize:"18px", fontStyle:"italic", color:"#f0ebe0", margin:0, lineHeight:1.7 }}>
+              We don't follow their culture. <span style={{ color:"#c0392b" }}>We build our own. ✊</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Get Involved strip */}
+        <div style={{ borderTop:"1px solid rgba(192,57,43,0.2)", padding:"64px 48px", textAlign:"center", background:"rgba(192,57,43,0.04)" }}>
+          <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>Want to help build the revolution?</p>
+          <p style={{ fontSize:"20px", fontStyle:"italic", color:"rgba(240,235,224,0.7)", maxWidth:"600px", margin:"0 auto 32px", lineHeight:1.7 }}>
+            If you have a skill, an idea, and a belief that indie film matters — we want to hear from you.
+          </p>
+          <button onClick={() => setStep("involved")} style={rBtn}>Get Involved ✊</button>
+        </div>
+
+        <div style={{ padding:"40px 48px", borderTop:"1px solid rgba(240,235,224,0.08)", textAlign:"center" }}>
+          <p style={{ fontSize:"11px", color:"rgba(240,235,224,0.25)", letterSpacing:"0.15em" }}>✊ INDIE REVOLUTIONS — SELF-DISTRIBUTION FOR THE PEOPLE</p>
+        </div>
+      </div>
+    )}
+
+    {/* ───── THE CODE ───── */}
+    {step === "code" && (
+      <div style={{ maxWidth:"720px", margin:"0 auto", padding:"80px 48px 120px" }}>
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>✊ The Renegade Code</p>
+        <h2 style={{ fontSize:"clamp(40px,6vw,72px)", fontWeight:"normal", lineHeight:1.05, marginBottom:"48px", letterSpacing:"-0.02em" }}>
+          There is<br /><em style={{ color:"#c0392b" }}>one rule.</em>
+        </h2>
+        <div style={{ width:"48px", height:"2px", background:"#c0392b", marginBottom:"56px" }} />
+        <div style={{ display:"flex", flexDirection:"column", gap:"36px" }}>
+          <p style={{ fontSize:"22px", lineHeight:1.8, color:"rgba(240,235,224,0.9)", fontStyle:"italic" }}>We talk about movies and the positive things they bring into our lives. Nothing more. Nothing less.</p>
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.6)" }}>The world outside is a minefield of negativity, judgement, and noise. You don't need to bring that in here. Leave it at the door.</p>
+          <div style={{ borderLeft:"3px solid #c0392b", paddingLeft:"32px" }}>
+            <p style={{ fontSize:"20px", lineHeight:1.8, color:"#f0ebe0", fontStyle:"italic", margin:0 }}>"Inside Indie Revolutions, we are warriors — for film, for culture, for each other. Every creed. Every background. Every person who has ever felt like the world wrote them off."</p>
+          </div>
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.6)" }}>We don't judge. We don't tear down. We lift up.</p>
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.6)" }}>If you've fallen — from grace, from hope, from belonging — there is a seat for you in the dark next to us. The film is about to start and we saved you a spot.</p>
+          <div style={{ background:"rgba(192,57,43,0.06)", border:"1px solid rgba(192,57,43,0.2)", padding:"40px", textAlign:"center" }}>
+            <p style={{ fontSize:"28px", color:"#f0ebe0", fontStyle:"italic", lineHeight:1.7, margin:"0 0 16px" }}>
+              We are Renegades.<br />All of us.<br /><span style={{ color:"#c0392b" }}>Together.</span>
+            </p>
+            <p style={{ fontSize:"22px", color:"#c0392b", letterSpacing:"0.2em", textTransform:"uppercase", margin:0, fontStyle:"normal" }}>
+              Lights. Camera. Action.
+            </p>
+          </div>
+        </div>
+        <div style={{ width:"48px", height:"2px", background:"rgba(192,57,43,0.3)", margin:"64px 0 48px" }} />
+        <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" }}>
+          <button onClick={() => { setStep("signup"); setRole("fan"); setOathTaken(false); }} style={rBtn}>Take the Oath & Join →</button>
+          <button onClick={() => setStep("home")} style={gBtn}>← Back Home</button>
+        </div>
+      </div>
+    )}
+
+    {/* ───── RENEGADE SIGNUP ───── */}
+    {step === "signup" && role !== "filmmaker" && (
+      <div style={{ maxWidth:"580px", margin:"0 auto", padding:"80px 48px" }}>
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>Renegade Registration</p>
+
+        {/* Founding 500 mini banner */}
+        {spotsLeft > 0 && (
+          <div style={{ background:"rgba(192,57,43,0.08)", border:"1px solid rgba(192,57,43,0.3)", padding:"16px 20px", marginBottom:"32px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <p style={{ fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", color:"#c0392b", margin:"0 0 4px" }}>🏆 Founding 500</p>
+              <p style={{ fontSize:"13px", color:"rgba(240,235,224,0.6)", margin:0 }}>You qualify for the Founding Trophy</p>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:"28px", color:"#c0392b", fontStyle:"italic", lineHeight:1 }}>{spotsLeft}</div>
+              <div style={{ fontSize:"10px", color:"rgba(240,235,224,0.35)", letterSpacing:"0.1em" }}>spots left</div>
+            </div>
+          </div>
+        )}
+
+        <h2 style={{ fontSize:"40px", fontWeight:"normal", marginBottom:"8px" }}>Join the revolution</h2>
+        <p style={{ fontSize:"14px", color:"rgba(240,235,224,0.5)", marginBottom:"40px", lineHeight:1.7 }}>When an indie film comes to your area, you'll be the first to know.</p>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
+          {/* Honeypot - hidden from humans */}
+          <div style={{ position:"absolute", left:"-9999px", opacity:0, height:0, overflow:"hidden" }}>
+            <input tabIndex="-1" autoComplete="off" value={form.honeypot} onChange={e => setForm(f => ({ ...f, honeypot: e.target.value }))} />
+          </div>
+
+          {[["Full Name","name","text"],["Email Address","email","email"]].map(([label,key,type]) => (
+            <div key={key}>
+              <label style={lStyle}>{label}</label>
+              <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} />
+            </div>
+          ))}
+
+          <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:"16px" }}>
+            <div>
+              <label style={lStyle}>City / Town</label>
+              <input type="text" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={iStyle} />
+            </div>
+            <div>
+              <label style={lStyle}>State</label>
+              <select value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} style={{ ...iStyle, background:"#111", color: form.state?"#f0ebe0":"rgba(240,235,224,0.3)" }}>
+                <option value="">—</option>
+                {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Human verification */}
+          <div>
+            <label style={lStyle}>Name a film you love — any film ✊</label>
+            <input type="text" value={form.favoriteFilm} onChange={e => setForm(f => ({ ...f, favoriteFilm: e.target.value }))} placeholder="This is how we know you're human" style={iStyle} />
+          </div>
+
+          {/* Top 3 Genres */}
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:"12px" }}>
+              <label style={{ ...lStyle, marginBottom:0 }}>Your Top 3 Genres</label>
+              <span style={{ fontSize:"11px", color: form.genres.length===3?"#c0392b":"rgba(240,235,224,0.3)", letterSpacing:"0.1em" }}>{form.genres.length}/3</span>
+            </div>
+            <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ flex:1, padding:"10px", border:`1px solid ${form.genres[i]?"#c0392b":"rgba(240,235,224,0.12)"}`, background: form.genres[i]?"rgba(192,57,43,0.1)":"rgba(255,255,255,0.02)", display:"flex", alignItems:"center", gap:"6px", minHeight:"44px", transition:"all 0.2s" }}>
+                  <span style={{ fontSize:"16px", fontStyle:"italic", color: form.genres[i]?"#c0392b":"rgba(240,235,224,0.15)", minWidth:"14px" }}>{i+1}</span>
+                  {form.genres[i] ? (
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%" }}>
+                      <span style={{ fontSize:"11px", color:"#f0ebe0" }}>{form.genres[i]}</span>
+                      <span onClick={() => pickGenre(form.genres[i])} style={{ fontSize:"14px", color:"rgba(240,235,224,0.3)", cursor:"pointer" }}>×</span>
+                    </div>
+                  ) : <span style={{ fontSize:"10px", color:"rgba(240,235,224,0.2)" }}>{i===0?"Fave":i===1?"2nd":"3rd"}</span>}
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+              {GENRES.map(g => {
+                const rank = form.genres.indexOf(g); const isSel = rank !== -1; const isFull = form.genres.length >= 3 && !isSel;
+                return (
+                  <button key={g} onClick={() => !isFull && pickGenre(g)} style={{ padding:"8px 14px", fontSize:"11px", letterSpacing:"0.1em", border:`1px solid ${isSel?"#c0392b":"rgba(240,235,224,0.18)"}`, background: isSel?"rgba(192,57,43,0.15)":"transparent", color: isFull?"rgba(240,235,224,0.2)":isSel?"#c0392b":"rgba(240,235,224,0.6)", cursor: isFull?"default":"pointer", fontFamily:"inherit", transition:"all 0.15s", position:"relative" }}>
+                    {isSel && <span style={{ position:"absolute", top:"-7px", right:"-5px", background:"#c0392b", color:"#f0ebe0", borderRadius:"50%", width:"14px", height:"14px", fontSize:"9px", fontWeight:"bold", display:"flex", alignItems:"center", justifyContent:"center" }}>{rank+1}</span>}
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* THE OATH */}
+          <div style={{ border:`2px solid ${oathTaken?"#c0392b":"rgba(240,235,224,0.1)"}`, padding:"28px", background: oathTaken?"rgba(192,57,43,0.06)":"rgba(255,255,255,0.02)", transition:"all 0.3s" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.3em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>✊ The Renegade Oath</p>
+            <p style={{ fontSize:"15px", lineHeight:1.8, color:"rgba(240,235,224,0.75)", fontStyle:"italic", marginBottom:"8px" }}>
+              "I am here for movies and the positive things they bring. I will lift others up, judge no one, and welcome every creed into the dark beside me. The world is hard enough. In here, we are Renegades — all of us, together."
+            </p>
+            <p style={{ fontSize:"16px", color:"#c0392b", letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:"20px", fontStyle:"normal" }}>
+              Lights. Camera. Action.
+            </p>
+            <button onClick={() => setOathTaken(o => !o)} style={{ padding:"12px 24px", background: oathTaken?"#c0392b":"transparent", border:"1px solid rgba(192,57,43,0.5)", color: oathTaken?"#f0ebe0":"#c0392b", fontSize:"12px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}>
+              {oathTaken ? "✊ I Am a Renegade" : "I Take This Oath"}
+            </button>
+          </div>
+
+          <div style={{ display:"flex", gap:"12px", marginTop:"8px" }}>
+            <button onClick={() => setStep("home")} style={{ padding:"16px 24px", background:"transparent", border:"1px solid rgba(240,235,224,0.15)", color:"rgba(240,235,224,0.4)", fontSize:"12px", letterSpacing:"0.15em", cursor:"pointer", fontFamily:"inherit" }}>← Back</button>
+            <button onClick={handleFanSubmit} style={{ flex:1, padding:"16px", background: oathTaken?"#c0392b":"rgba(100,30,20,0.4)", border:"none", color:"#f0ebe0", fontSize:"12px", letterSpacing:"0.2em", textTransform:"uppercase", cursor: oathTaken?"pointer":"default", fontFamily:"inherit", fontWeight:"bold", transition:"all 0.3s" }}>
+              {oathTaken ? "Join the Revolution →" : "Take the Oath to Continue"}
+            </button>
+          </div>
+        </div>
+        <p style={{ fontSize:"12px", color:"rgba(240,235,224,0.25)", marginTop:"24px", lineHeight:1.6 }}>No spam. No selling your data. Renegades only.</p>
+      </div>
+    )}
+
+    {/* ───── FILMMAKER SIGNUP ───── */}
+    {step === "signup" && role === "filmmaker" && (
+      <div style={{ maxWidth:"620px", margin:"0 auto", padding:"80px 48px" }}>
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>Filmmaker Registration</p>
+        <h2 style={{ fontSize:"40px", fontWeight:"normal", marginBottom:"8px" }}>Tour your film</h2>
+        <p style={{ fontSize:"14px", color:"rgba(240,235,224,0.5)", marginBottom:"48px", lineHeight:1.7 }}>Tell us about your film and where you can get to. We'll match you with Renegades and venues ready and waiting.</p>
+        <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
+          {[["Your Name","name"],["Your Email","email"],["Film Title","film"],["Release Year","year"]].map(([label,key]) => (
+            <div key={key}>
+              <label style={lStyle}>{label}</label>
+              <input type="text" value={filmForm[key]} onChange={e => setFilmForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} />
+            </div>
+          ))}
+          <div>
+            <label style={lStyle}>One-Line Synopsis</label>
+            <textarea value={filmForm.synopsis} onChange={e => setFilmForm(f => ({ ...f, synopsis: e.target.value }))} rows={3} style={{ ...iStyle, resize:"vertical" }} />
+          </div>
+          <div style={{ border:"1px solid rgba(192,57,43,0.25)", padding:"24px", background:"rgba(192,57,43,0.03)" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.3em", textTransform:"uppercase", color:"#c0392b", marginBottom:"12px" }}>✊ Towns I Can Reach</p>
+            <p style={{ fontSize:"13px", color:"rgba(240,235,224,0.45)", lineHeight:1.7, marginBottom:"16px" }}>List the cities and towns you can physically get to. We'll match you with Renegade-submitted venues in those towns.</p>
+            <label style={lStyle}>Towns / Cities (separate with commas)</label>
+            <textarea value={filmForm.towns} onChange={e => setFilmForm(f => ({ ...f, towns: e.target.value }))} rows={2} placeholder="e.g. Austin TX, New Orleans LA, Nashville TN" style={{ ...iStyle, resize:"vertical" }} />
+            <label style={{ ...lStyle, marginTop:"16px" }}>Travel Budget</label>
+            <select value={filmForm.budget} onChange={e => setFilmForm(f => ({ ...f, budget: e.target.value }))} style={{ ...iStyle, background:"#111", color: filmForm.budget?"#f0ebe0":"rgba(240,235,224,0.3)" }}>
+              <option value="">— Select your situation</option>
+              <option value="self">I can self-fund travel</option>
+              <option value="tickets">I need ticket sales to cover travel</option>
+              <option value="sponsor">I need venue or sponsor support</option>
+            </select>
+          </div>
+          <div style={{ display:"flex", gap:"12px" }}>
+            <button onClick={() => setStep("home")} style={{ padding:"16px 24px", background:"transparent", border:"1px solid rgba(240,235,224,0.15)", color:"rgba(240,235,224,0.4)", fontSize:"12px", letterSpacing:"0.15em", cursor:"pointer", fontFamily:"inherit" }}>← Back</button>
+            <button onClick={handleFilmSubmit} style={{ flex:1, padding:"16px", background:"#c0392b", border:"none", color:"#f0ebe0", fontSize:"12px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", fontWeight:"bold" }}>List My Film →</button>
+          </div>
+        </div>
+        <div style={{ marginTop:"40px", padding:"24px", border:"1px solid rgba(192,57,43,0.2)", background:"rgba(192,57,43,0.04)" }}>
+          <p style={{ fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", color:"#c0392b", marginBottom:"12px" }}>What you'll get</p>
+          {["A heat map of Renegade interest across every US town","Matched to Renegade-submitted venues in your tour towns","Automated notifications sent to matched Renegades","Ticket sales support with direct filmmaker payout","Zero gatekeepers. You keep your rights. Always."].map(b => (
+            <p key={b} style={{ fontSize:"13px", color:"rgba(240,235,224,0.6)", lineHeight:1.8, marginBottom:"4px" }}>✊ {b}</p>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* ───── GET INVOLVED ───── */}
+    {step === "involved" && (
+      <div style={{ maxWidth:"640px", margin:"0 auto", padding:"80px 48px 120px" }}>
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>✊ Join the Movement</p>
+        <h2 style={{ fontSize:"clamp(36px,5vw,60px)", fontWeight:"normal", lineHeight:1.1, marginBottom:"24px", letterSpacing:"-0.02em" }}>
+          Want to help build<br /><em style={{ color:"#c0392b" }}>the revolution?</em>
+        </h2>
+        <p style={{ fontSize:"16px", lineHeight:1.8, color:"rgba(240,235,224,0.55)", marginBottom:"16px" }}>
+          If you have a skill, an idea, and a belief that indie film matters — we want to hear from you. Every revolution is built by people who showed up.
+        </p>
+        <div style={{ width:"48px", height:"2px", background:"#c0392b", marginBottom:"48px" }} />
+
+        {involvedSent ? (
+          <div style={{ textAlign:"center", padding:"64px 0" }}>
+            <div style={{ fontSize:"48px", marginBottom:"24px" }}>✊</div>
+            <h3 style={{ fontSize:"32px", fontWeight:"normal", marginBottom:"16px" }}>Message received.</h3>
+            <p style={{ fontSize:"16px", color:"rgba(240,235,224,0.5)", lineHeight:1.7 }}>We'll be in touch at <strong style={{ color:"#f0ebe0" }}>{involvedForm.email}</strong>. The revolution is built by people like you.</p>
+          </div>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
+            {/* Honeypot */}
+            <div style={{ position:"absolute", left:"-9999px", opacity:0, height:0, overflow:"hidden" }}>
+              <input tabIndex="-1" autoComplete="off" value={involvedForm.honeypot} onChange={e => setInvolvedForm(f => ({ ...f, honeypot: e.target.value }))} />
+            </div>
+
+            {[["Your Name","name","text"],["Your Email","email","email"]].map(([label,key,type]) => (
+              <div key={key}>
+                <label style={lStyle}>{label}</label>
+                <input type={type} value={involvedForm[key]} onChange={e => setInvolvedForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} />
+              </div>
+            ))}
+
+            <div>
+              <label style={lStyle}>Your Skill</label>
+              <select value={involvedForm.skill} onChange={e => setInvolvedForm(f => ({ ...f, skill: e.target.value }))} style={{ ...iStyle, background:"#111", color: involvedForm.skill?"#f0ebe0":"rgba(240,235,224,0.3)" }}>
+                <option value="">— What do you bring?</option>
+                {SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label style={lStyle}>Your Idea — What do you want to offer the movement?</label>
+              <textarea value={involvedForm.idea} onChange={e => setInvolvedForm(f => ({ ...f, idea: e.target.value }))} rows={5} placeholder="Tell us what you want to bring. Be specific. Be bold. We're listening." style={{ ...iStyle, resize:"vertical" }} />
+            </div>
+
+            {/* Human check */}
+            <div>
+              <label style={lStyle}>Name a film that changed you — any film ✊</label>
+              <input type="text" value={involvedForm.favoriteFilm} onChange={e => setInvolvedForm(f => ({ ...f, favoriteFilm: e.target.value }))} placeholder="This is how we know you're human" style={iStyle} />
+            </div>
+
+            {involvedError && <p style={{ fontSize:"13px", color:"#c0392b" }}>{involvedError}</p>}
+
+            <div style={{ padding:"20px 24px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(240,235,224,0.08)", fontSize:"13px", color:"rgba(240,235,224,0.4)", lineHeight:1.7 }}>
+              Your message goes directly to the founder of Indie Revolutions at <span style={{ color:"rgba(240,235,224,0.6)" }}>{CONTACT_EMAIL}</span>. No algorithm. No assistant. A real person who built this because they believe in it.
+            </div>
+
+            <div style={{ display:"flex", gap:"12px" }}>
+              <button onClick={() => setStep("home")} style={{ padding:"16px 24px", background:"transparent", border:"1px solid rgba(240,235,224,0.15)", color:"rgba(240,235,224,0.4)", fontSize:"12px", letterSpacing:"0.15em", cursor:"pointer", fontFamily:"inherit" }}>← Back</button>
+              <button onClick={handleInvolvedSubmit} style={{ flex:1, padding:"16px", background:"#c0392b", border:"none", color:"#f0ebe0", fontSize:"12px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", fontWeight:"bold" }}>
+                Send It ✊
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* ───── VENUES ───── */}
+    {step === "venues" && (
+      <div style={{ maxWidth:"860px", margin:"0 auto", padding:"80px 48px 120px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px", flexWrap:"wrap", gap:"16px" }}>
+          <div>
+            <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>✊ Renegade Venues</p>
+            <h2 style={{ fontSize:"clamp(36px,5vw,64px)", fontWeight:"normal", lineHeight:1.05, letterSpacing:"-0.02em", margin:0 }}>Where We Screen</h2>
+          </div>
+          <button onClick={() => setShowVenueForm(f => !f)} style={{ padding:"14px 28px", background: showVenueForm?"transparent":"#c0392b", border:`1px solid ${showVenueForm?"rgba(240,235,224,0.2)":"#c0392b"}`, color: showVenueForm?"rgba(240,235,224,0.4)":"#f0ebe0", fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", marginTop:"8px" }}>
+            {showVenueForm ? "Cancel" : "+ Add a Venue"}
+          </button>
+        </div>
+        <p style={{ fontSize:"16px", lineHeight:1.8, color:"rgba(240,235,224,0.45)", marginBottom:"16px", maxWidth:"640px" }}>
+          Know a spot that could host an indie screening? A bar with a back room, a community hall, a warehouse, an art space? Tell us which theaters have the best snacks and are most accommodating to fans and filmmakers. Add it here — filmmakers on tour are looking right now.
+        </p>
+        <div style={{ width:"48px", height:"2px", background:"#c0392b", marginBottom:"48px" }} />
+        {showVenueForm && (
+          <div style={{ background:"rgba(192,57,43,0.04)", border:"1px solid rgba(192,57,43,0.2)", padding:"32px", marginBottom:"48px" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.3em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>Submit a Venue</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:"12px" }}>
+                {[["Venue Name","name"],["Town / City","town"]].map(([label,key]) => (
+                  <div key={key}><label style={lStyle}>{label}</label><input type="text" value={venueForm[key]} onChange={e => setVenueForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} /></div>
+                ))}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr", gap:"12px" }}>
+                {[["Street Address","address"],["Capacity","capacity"]].map(([label,key]) => (
+                  <div key={key}><label style={lStyle}>{label}</label><input type="text" value={venueForm[key]} onChange={e => setVenueForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} /></div>
+                ))}
+                <div>
+                  <label style={lStyle}>Type</label>
+                  <select value={venueForm.type} onChange={e => setVenueForm(f => ({ ...f, type: e.target.value }))} style={{ ...iStyle, background:"#111", color: venueForm.type?"#f0ebe0":"rgba(240,235,224,0.3)" }}>
+                    <option value="">—</option>
+                    {["Independent Theatre","Bar with Screen","Community Hall","Warehouse","Art Space","Church Hall","Outdoor","Other"].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>Insider Note — Snacks? Filmmaker-friendly? What makes it special?</label>
+                <textarea value={venueForm.note} onChange={e => setVenueForm(f => ({ ...f, note: e.target.value }))} rows={2} placeholder="e.g. Best popcorn in town. Owner gives filmmakers free drinks. Accommodating to everyone." style={{ ...iStyle, resize:"vertical" }} />
+              </div>
+              <button onClick={submitVenue} style={{ alignSelf:"flex-start", padding:"14px 32px", background:"#c0392b", border:"none", color:"#f0ebe0", fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", fontWeight:"bold" }}>Add This Venue →</button>
+            </div>
+          </div>
+        )}
+        <div style={{ display:"flex", flexDirection:"column", gap:"2px" }}>
+          {venues.map((venue, i) => (
+            <div key={venue.id} style={{ padding:"28px 32px", borderLeft:"3px solid rgba(192,57,43,0.2)", background: i%2===0?"rgba(255,255,255,0.01)":"transparent", transition:"border-color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderLeftColor = "#c0392b"}
+              onMouseLeave={e => e.currentTarget.style.borderLeftColor = "rgba(192,57,43,0.2)"}
+            >
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:"8px", marginBottom:"12px" }}>
+                <div>
+                  <h3 style={{ fontSize:"20px", fontWeight:"normal", margin:"0 0 4px" }}>{venue.name}</h3>
+                  <p style={{ fontSize:"12px", color:"rgba(240,235,224,0.35)", letterSpacing:"0.1em", margin:0 }}>📍 {venue.town}{venue.address && ` · ${venue.address}`}</p>
+                </div>
+                <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                  {venue.type && <span style={{ fontSize:"10px", letterSpacing:"0.15em", textTransform:"uppercase", color:"#c0392b", border:"1px solid rgba(192,57,43,0.3)", padding:"4px 10px" }}>{venue.type}</span>}
+                  {venue.capacity && <span style={{ fontSize:"10px", letterSpacing:"0.15em", textTransform:"uppercase", color:"rgba(240,235,224,0.35)", border:"1px solid rgba(240,235,224,0.1)", padding:"4px 10px" }}>~{venue.capacity} seats</span>}
+                </div>
+              </div>
+              {venue.note && <p style={{ fontSize:"14px", lineHeight:1.7, color:"rgba(240,235,224,0.55)", fontStyle:"italic", margin:0 }}>"{venue.note}"</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* ───── THE NIGHTS ───── */}
+    {step === "nights" && (
+      <div style={{ maxWidth:"860px", margin:"0 auto", padding:"80px 48px 120px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px", flexWrap:"wrap", gap:"16px" }}>
+          <div>
+            <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"16px" }}>✊ Community</p>
+            <h2 style={{ fontSize:"clamp(36px,5vw,64px)", fontWeight:"normal", lineHeight:1.05, letterSpacing:"-0.02em", margin:0 }}>The Nights</h2>
+          </div>
+          <button onClick={() => setShowNightForm(f => !f)} style={{ padding:"14px 28px", background: showNightForm?"transparent":"#c0392b", border:`1px solid ${showNightForm?"rgba(240,235,224,0.2)":"#c0392b"}`, color: showNightForm?"rgba(240,235,224,0.4)":"#f0ebe0", fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", marginTop:"8px" }}>
+            {showNightForm ? "Cancel" : "+ Were You There?"}
+          </button>
+        </div>
+        <p style={{ fontSize:"16px", lineHeight:1.8, color:"rgba(240,235,224,0.45)", marginBottom:"16px", maxWidth:"640px" }}>
+          No Rotten Tomatoes. No thumbs up or down. Here we share memories of the movies that brought friends and Renegades together. It's never wasted time when you're with friends.
+        </p>
+        <div style={{ width:"48px", height:"2px", background:"#c0392b", marginBottom:"48px" }} />
+        {showNightForm && (
+          <div style={{ background:"rgba(192,57,43,0.04)", border:"1px solid rgba(192,57,43,0.2)", padding:"32px", marginBottom:"48px" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.3em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>Share Your Night</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr", gap:"12px" }}>
+                {[["Film Title","film"],["Director","director"],["Year","year"]].map(([label,key]) => (
+                  <div key={key}><label style={lStyle}>{label}</label><input type="text" value={nightForm[key]} onChange={e => setNightForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} /></div>
+                ))}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px" }}>
+                {[["Your Name","renegade"],["Your Town","town"]].map(([label,key]) => (
+                  <div key={key}><label style={lStyle}>{label}</label><input type="text" value={nightForm[key]} onChange={e => setNightForm(f => ({ ...f, [key]: e.target.value }))} style={iStyle} /></div>
+                ))}
+                <div>
+                  <label style={lStyle}>Genre</label>
+                  <select value={nightForm.genre} onChange={e => setNightForm(f => ({ ...f, genre: e.target.value }))} style={{ ...iStyle, background:"#111", color: nightForm.genre?"#f0ebe0":"rgba(240,235,224,0.3)" }}>
+                    <option value="">— Genre</option>
+                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={lStyle}>What was the night like? Who were you with?</label>
+                <textarea value={nightForm.moment} onChange={e => setNightForm(f => ({ ...f, moment: e.target.value }))} rows={3} placeholder="Who were you with? What happened after the lights came up? It's never wasted time when you're with friends." style={{ ...iStyle, resize:"vertical" }} />
+              </div>
+              <button onClick={submitNight} style={{ alignSelf:"flex-start", padding:"14px 32px", background:"#c0392b", border:"none", color:"#f0ebe0", fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", fontWeight:"bold" }}>Add to The Nights →</button>
+            </div>
+          </div>
+        )}
+        <div style={{ display:"flex", flexDirection:"column", gap:"2px" }}>
+          {nights.map((night, i) => (
+            <div key={night.id} style={{ padding:"32px", borderLeft:"3px solid rgba(192,57,43,0.25)", background: i%2===0?"rgba(255,255,255,0.01)":"transparent", transition:"border-color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderLeftColor = "#c0392b"}
+              onMouseLeave={e => e.currentTarget.style.borderLeftColor = "rgba(192,57,43,0.25)"}
+            >
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"16px", flexWrap:"wrap", gap:"8px" }}>
+                <div>
+                  <h3 style={{ fontSize:"22px", fontWeight:"normal", margin:"0 0 4px", letterSpacing:"-0.01em" }}>{night.film}</h3>
+                  <p style={{ fontSize:"12px", color:"rgba(240,235,224,0.35)", letterSpacing:"0.1em", margin:0 }}>{night.director&&`dir. ${night.director}`}{night.year&&` · ${night.year}`}{night.genre&&` · ${night.genre}`}</p>
+                </div>
+                {night.genre && <span style={{ fontSize:"10px", letterSpacing:"0.15em", textTransform:"uppercase", color:"#c0392b", border:"1px solid rgba(192,57,43,0.3)", padding:"4px 10px" }}>{night.genre}</span>}
+              </div>
+              <p style={{ fontSize:"17px", lineHeight:1.8, color:"rgba(240,235,224,0.8)", fontStyle:"italic", marginBottom:"20px" }}>"{night.moment}"</p>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
+                <div>
+                  <p style={{ fontSize:"11px", color:"rgba(240,235,224,0.3)", letterSpacing:"0.1em", textTransform:"uppercase", margin:"0 0 6px" }}>Renegades who were there</p>
+                  <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                    {night.renegades.map(r => <span key={r} style={{ fontSize:"12px", color:"rgba(240,235,224,0.5)", background:"rgba(255,255,255,0.04)", padding:"4px 10px", border:"1px solid rgba(240,235,224,0.08)" }}>{r}</span>)}
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                  <span style={{ fontSize:"11px", color:"rgba(240,235,224,0.25)" }}>📍 {night.town}</span>
+                  <button onClick={() => handleShare(night)} style={{ padding:"8px 16px", background:"transparent", border:`1px solid ${shared===night.id?"rgba(192,57,43,0.6)":"rgba(240,235,224,0.15)"}`, color: shared===night.id?"#c0392b":"rgba(240,235,224,0.4)", fontSize:"11px", letterSpacing:"0.15em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}>
+                    {shared===night.id ? "✊ Copied!" : "Share"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop:"64px", textAlign:"center" }}>
+          <p style={{ fontSize:"16px", color:"rgba(240,235,224,0.35)", fontStyle:"italic", marginBottom:"24px" }}>Every memory shared keeps the revolution alive.</p>
+          <button onClick={() => { setShowNightForm(true); window.scrollTo({ top:0, behavior:"smooth" }); }} style={{ padding:"14px 36px", background:"transparent", border:"1px solid rgba(192,57,43,0.4)", color:"#c0392b", fontSize:"11px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit" }}>+ Were You There?</button>
+        </div>
+      </div>
+    )}
+
+    {/* ───── MANIFESTO ───── */}
+    {step === "manifesto" && (
+      <div style={{ maxWidth:"720px", margin:"0 auto", padding:"80px 48px 120px" }}>
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>✊ Our Mission</p>
+        <h2 style={{ fontSize:"clamp(40px,6vw,72px)", fontWeight:"normal", lineHeight:1.05, marginBottom:"64px", letterSpacing:"-0.02em" }}>Indie Revolutions<br /><em style={{ color:"#c0392b" }}>exists for the<br />little guy.</em></h2>
+        <div style={{ width:"48px", height:"2px", background:"#c0392b", marginBottom:"64px" }} />
+        <div style={{ display:"flex", flexDirection:"column", gap:"40px" }}>
+          <p style={{ fontSize:"20px", lineHeight:1.8, color:"rgba(240,235,224,0.85)", fontStyle:"italic" }}>For the filmmaker who maxed out their credit card, shot on weekends, begged their friends to act, and poured every piece of themselves into a story the world needs to hear — but can't get a meeting in Hollywood.</p>
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.65)" }}>And for the Renegades. The people in every town across America who are done with sequels and algorithms. Who want cinema that punches them in the gut, changes how they see the world, and reminds them why stories matter.</p>
+          <div style={{ borderLeft:"3px solid #c0392b", paddingLeft:"32px" }}>
+            <p style={{ fontSize:"22px", lineHeight:1.7, color:"#f0ebe0", fontStyle:"italic", margin:0 }}>"Great films shouldn't die on a hard drive. They should tour. They should find their people — town by town, Renegade by Renegade."</p>
+          </div>
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.65)" }}>We built Indie Revolutions because the system was never built for the little guy. Studios take 90 cents on every dollar. Algorithms decide what the world gets to see — and indie cinema always loses that fight.</p>
+
+          <div style={{ borderLeft:"3px solid #c0392b", paddingLeft:"32px" }}>
+            <p style={{ fontSize:"20px", lineHeight:1.8, color:"#f0ebe0", fontStyle:"italic", margin:0 }}>
+              "No more being told what's cool by Hollywood or any corporation. They don't tell us how to dress. They don't tell us how to act. They don't get to decide what moves us, what matters, or what culture looks like. We are not their audience. We are our own culture — built by real people, in real towns, around real stories."
+            </p>
+          </div>
+
+          <p style={{ fontSize:"17px", lineHeight:1.9, color:"rgba(240,235,224,0.65)" }}>The Renegades don't follow trends. They set them. Not in boardrooms or pitch meetings — in parking lots after midnight, in church halls full of strangers who became friends, in warehouses where the projector flickered and nobody cared because the story was that good.</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"32px" }}>
+            {[["Entertain","Because joy, laughter, fear, and wonder are worth fighting for."],["Influence","Because a single film can shift how a generation thinks."],["Change the World","Because the little guys who bust their ass to make movies deserve to be heard."]].map(([title,desc]) => (
+              <div key={title} style={{ borderTop:"1px solid rgba(192,57,43,0.4)", paddingTop:"24px" }}>
+                <p style={{ fontSize:"14px", color:"#c0392b", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"12px" }}>{title}</p>
+                <p style={{ fontSize:"14px", lineHeight:1.7, color:"rgba(240,235,224,0.5)" }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize:"24px", lineHeight:1.6, color:"#f0ebe0", fontStyle:"italic" }}>Just filmmakers who busted their ass to make something real, and the Renegades who show up to watch it.</p>
+
+          {/* Roadmap in manifesto */}
+          <div style={{ borderTop:"1px solid rgba(192,57,43,0.2)", paddingTop:"48px" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>The Revolution Roadmap</p>
+            <p style={{ fontSize:"20px", lineHeight:1.7, color:"rgba(240,235,224,0.8)", fontStyle:"italic", marginBottom:"40px" }}>
+              Film is the first frame. The rest of the picture is coming.
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:"24px" }}>
+              {[
+                ["Phase 01 — Film", "NOW", "The revolution begins in the dark. Indie films. Real stories. Renegades in every town showing up for filmmakers who bet everything on their vision. This is where we start."],
+                ["Phase 02 — Music", "NEXT", "Independent artists. No label. No radio play. Just musicians who built something real finding the towns that need to hear it. The stage is being built."],
+                ["Phase 03 — Art", "COMING", "Pop-ups. Installations. Shows in warehouses, empty storefronts, and community spaces. Art that doesn't wait for a gallery to say yes."],
+                ["Phase 04 — And Beyond", "THE FUTURE", "Theatre. Comedy. Photography. Poetry. Every art form that's been shut out by the gatekeepers has a home here. We're just getting started."],
+              ].map(([title, status, desc]) => (
+                <div key={title} style={{ display:"flex", gap:"24px", alignItems:"flex-start" }}>
+                  <div style={{ minWidth:"80px", textAlign:"right", paddingTop:"3px" }}>
+                    <span style={{ fontSize:"9px", letterSpacing:"0.2em", textTransform:"uppercase", color: status==="NOW"?"#c0392b":"rgba(240,235,224,0.25)", border:`1px solid ${status==="NOW"?"rgba(192,57,43,0.5)":"rgba(240,235,224,0.1)"}`, padding:"4px 8px", display:"inline-block" }}>{status}</span>
+                  </div>
+                  <div style={{ borderLeft:`2px solid ${status==="NOW"?"#c0392b":"rgba(240,235,224,0.1)"}`, paddingLeft:"24px", flex:1 }}>
+                    <p style={{ fontSize:"16px", color: status==="NOW"?"#f0ebe0":"rgba(240,235,224,0.4)", marginBottom:"8px" }}>{title}</p>
+                    <p style={{ fontSize:"14px", lineHeight:1.7, color: status==="NOW"?"rgba(240,235,224,0.6)":"rgba(240,235,224,0.25)", margin:0 }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p style={{ fontSize:"28px", color:"#c0392b", letterSpacing:"0.05em" }}>That's the revolution.<br />Join it. ✊</p>
+        </div>
+        <div style={{ width:"48px", height:"2px", background:"rgba(192,57,43,0.3)", margin:"64px 0 48px" }} />
+        <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" }}>
+          <button onClick={() => { setStep("signup"); setRole("fan"); }} style={rBtn}>Become a Renegade →</button>
+          <button onClick={() => { setStep("signup"); setRole("filmmaker"); }} style={gBtn}>I Have a Film</button>
+        </div>
+      </div>
+    )}
+
+    {/* ───── SUCCESS ───── */}
+    {step === "success" && (
+      <div style={{ maxWidth:"560px", margin:"0 auto", padding:"120px 48px", textAlign:"center" }}>
+        <div style={{ fontSize:"56px", marginBottom:"32px" }}>✊</div>
+        {role !== "filmmaker" && spotsLeft < TOTAL_FOUNDING && (
+          <div style={{ background:"rgba(192,57,43,0.08)", border:"1px solid rgba(192,57,43,0.3)", padding:"20px", marginBottom:"32px" }}>
+            <p style={{ fontSize:"11px", letterSpacing:"0.3em", textTransform:"uppercase", color:"#c0392b", margin:"0 0 8px" }}>🏆 You're a Founding Renegade</p>
+            <p style={{ fontSize:"14px", color:"rgba(240,235,224,0.6)", margin:0 }}>Your Founding Trophy is reserved. There are {spotsLeft} spots remaining. It will never be made again.</p>
+          </div>
+        )}
+        <p style={{ fontSize:"11px", letterSpacing:"0.4em", textTransform:"uppercase", color:"#c0392b", marginBottom:"24px" }}>
+          {role==="filmmaker" ? "You're in the revolution" : "Welcome, Renegade"}
+        </p>
+        <h2 style={{ fontSize:"40px", fontWeight:"normal", marginBottom:"24px" }}>
+          {role==="filmmaker" ? "Film listed. Revolution incoming." : "You're a Renegade now."}
+        </h2>
+        <p style={{ fontSize:"16px", lineHeight:1.8, color:"rgba(240,235,224,0.55)", marginBottom:"16px" }}>
+          {role==="filmmaker"
+            ? "We'll match your tour towns to Renegades and venues within 48 hours."
+            : `The moment an indie film is heading to ${form.city||"your town"}, you'll be the first Renegade to know.`}
+        </p>
+        <p style={{ fontSize:"18px", color:"#c0392b", letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:"48px" }}>Lights. Camera. Action.</p>
+        <button onClick={() => { setStep("home"); setForm({name:"",email:"",city:"",state:"",genres:[],favoriteFilm:"",honeypot:""}); setFilmForm({name:"",email:"",film:"",year:"",synopsis:"",towns:"",budget:""}); setOathTaken(false); }} style={{ padding:"14px 36px", background:"transparent", border:"1px solid rgba(192,57,43,0.5)", color:"#c0392b", fontSize:"12px", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", fontFamily:"inherit" }}>
+          ← Back to Indie Revolutions
+        </button>
+      </div>
+    )}
+
+  </div>
+</div>
+```
+
+);
+}
+
+```
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<IndieRevolution />);
+```
+
+  </script>
+</body>
+</html> 
