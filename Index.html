@@ -76,7 +76,7 @@ const CONTACT_EMAIL = “hello@indierevolutions.com”;
 const TOTAL_FOUNDING = 500;
 const SPOTS_TAKEN = 347; // update this as real signups come in
 
-export default function IndieRevolution() {
+function IndieRevolution() {
 const [step, setStep] = useState(“home”);
 const [role, setRole] = useState(null);
 const [oathTaken, setOathTaken] = useState(false);
@@ -194,7 +194,6 @@ return (
 <div style={{ position:“fixed”, top:”-200px”, left:”-200px”, width:“600px”, height:“600px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,40,40,0.07) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
 <div style={{ position:“fixed”, bottom:”-150px”, right:”-100px”, width:“500px”, height:“500px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,130,60,0.06) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
 
-```
   <div style={{ position:"relative", zIndex:1 }}>
     <Nav />
 
@@ -852,15 +851,12 @@ return (
 
   </div>
 </div>
-```
 
 );
 }
 
-```
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<IndieRevolution />);
-```
 
   </script>
 </body>
