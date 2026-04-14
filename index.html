@@ -76,7 +76,7 @@ const CONTACT_EMAIL = “hello@indierevolutions.com”;
 const TOTAL_FOUNDING = 500;
 const SPOTS_TAKEN = 347; // update this as real signups come in
 
-export default function IndieRevolution() {
+function IndieRevolution() {
 const [step, setStep] = useState(“home”);
 const [role, setRole] = useState(null);
 const [oathTaken, setOathTaken] = useState(false);
@@ -857,10 +857,8 @@ return (
 );
 }
 
-```
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<IndieRevolution />);
-```
 
   </script>
 </body>
