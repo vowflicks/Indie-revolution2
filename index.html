@@ -100,9 +100,9 @@ useEffect(() => { formStartTime.current = Date.now(); }, [step]);
 
 const pickGenre = (g) => {
 setForm(f => {
-if (f.genres.includes(g)) return { …f, genres: f.genres.filter(x => x !== g) };
+if (f.genres.includes(g)) return { ...f, genres: f.genres.filter(x => x !== g) };
 if (f.genres.length >= 3) return f;
-return { …f, genres: […f.genres, g] };
+return { ...f, genres: [...f.genres, g] };
 });
 };
 
@@ -143,14 +143,14 @@ setInvolvedSent(true);
 
 const submitNight = () => {
 if (!nightForm.film || !nightForm.renegade || !nightForm.town || !nightForm.moment) return;
-setNights(n => [{ id: Date.now(), …nightForm, renegades: [nightForm.renegade] }, …n]);
+setNights(n => [{ id: Date.now(), ...nightForm, renegades: [nightForm.renegade] }, ...n]);
 setNightForm({ film:””, director:””, year:””, renegade:””, town:””, moment:””, genre:”” });
 setShowNightForm(false);
 };
 
 const submitVenue = () => {
 if (!venueForm.name || !venueForm.town) return;
-setVenues(v => [{ id: Date.now(), …venueForm }, …v]);
+setVenues(v => [{ id: Date.now(), ...venueForm }, ...v]);
 setVenueForm({ name:””, town:””, address:””, capacity:””, type:””, note:”” });
 setShowVenueForm(false);
 };
