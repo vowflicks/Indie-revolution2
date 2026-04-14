@@ -100,9 +100,9 @@ useEffect(() => { formStartTime.current = Date.now(); }, [step]);
 
 const pickGenre = (g) => {
 setForm(f => {
-if (f.genres.includes(g)) return { …f, genres: f.genres.filter(x => x !== g) };
+if (f.genres.includes(g)) return { ...f, genres: f.genres.filter(x => x !== g) };
 if (f.genres.length >= 3) return f;
-return { …f, genres: […f.genres, g] };
+return { ...f, genres: [...f.genres, g] };
 });
 };
 
@@ -143,14 +143,14 @@ setInvolvedSent(true);
 
 const submitNight = () => {
 if (!nightForm.film || !nightForm.renegade || !nightForm.town || !nightForm.moment) return;
-setNights(n => [{ id: Date.now(), …nightForm, renegades: [nightForm.renegade] }, …n]);
+setNights(n => [{ id: Date.now(), ...nightForm, renegades: [nightForm.renegade] }, ...n]);
 setNightForm({ film:””, director:””, year:””, renegade:””, town:””, moment:””, genre:”” });
 setShowNightForm(false);
 };
 
 const submitVenue = () => {
 if (!venueForm.name || !venueForm.town) return;
-setVenues(v => [{ id: Date.now(), …venueForm }, …v]);
+setVenues(v => [{ id: Date.now(), ...venueForm }, ...v]);
 setVenueForm({ name:””, town:””, address:””, capacity:””, type:””, note:”” });
 setShowVenueForm(false);
 };
@@ -194,7 +194,6 @@ return (
 <div style={{ position:“fixed”, top:”-200px”, left:”-200px”, width:“600px”, height:“600px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,40,40,0.07) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
 <div style={{ position:“fixed”, bottom:”-150px”, right:”-100px”, width:“500px”, height:“500px”, borderRadius:“50%”, background:“radial-gradient(circle, rgba(180,130,60,0.06) 0%, transparent 70%)”, pointerEvents:“none”, zIndex:0 }} />
 
-```
   <div style={{ position:"relative", zIndex:1 }}>
     <Nav />
 
@@ -852,15 +851,12 @@ return (
 
   </div>
 </div>
-```
 
 );
 }
 
-```
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<IndieRevolution />);
-```
 
   </script>
 </body>
